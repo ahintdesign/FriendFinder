@@ -1,37 +1,51 @@
-// ===============================================================================
-// LOAD DATA
-// We are linking our routes to a series of "data" sources.
-// These data sources hold arrays of information on table-data, waitinglist, etc.
-// ===============================================================================
-
-// A GET route with the url /api/friends. This will be used to display a JSON of all possible friends.
-
-var friendData = require("../data/friends");
-
-// ===============================================================================
-// ROUTING
-// ===============================================================================
-
+var path = require("path");
+// get data
+var friends = require("../data/friends.js");
 module.exports = function(app) {
-  // API GET Requests
-  // Below code handles when users "visit" a page.
-  // In each of the below cases when a user visits a link
-  // (ex: localhost:PORT/api/admin... they are shown a JSON of the data in the table)
-  // ---------------------------------------------------------------------------
-
-  app.get("/api/friends", function(req, res) {
-    res.json(friendData);
-  });
-  };
-
-  // API POST Requests
-  // Below code handles when a user submits a form and thus submits data to the server.
-  // In each of the below cases, when a user submits form data (a JSON object)
-  // ...the JSON is pushed to the appropriate JavaScript array
-  // (ex. User fills out a reservation request... this data is then sent to the server...
-  // Then the server saves the data to the tableData array)
-  // ---------------------------------------------------------------------------
-
-//   app.post("/api/friends", function(req, res) {
-//
-// });
+    var bodyParser = require("body-parser");
+    // listen for get request to /api/friends and send json of data from /data/friends.js
+    app.get("/api/friends", function(req, res) {
+        res.json(friends);
+    });
+    // listen for post request to /api/friends
+    app.post("/api/friends", function(req, res) {
+        // save posted data to newPerson
+        var newPerson = req.body;
+        // initialze variables
+        var newScores = [];
+        var totalDifference = 0;
+        var closeFriend = "";
+        var lowScore = 0;
+        var friendImage = "";
+        var friendId = 0;
+        // read scores into new array for comparison
+        for (var k = 0; k < 10; k++) {
+            newScores[k] = parseInt(newPerson.scores[k]);
+        }
+        // iterate through friends data and compare to each
+        for (var i = 0; i < friends.length; i++) {
+            totalDifference = 0;
+            for (var j = 0; j < 10; j++) {
+                totalDifference = totalDifference + Math.abs(newScores[j] - parseInt(friends[i].scores[j]));
+            }
+            // set initial values for friend with closest score
+            if (i === 0) {
+                closeFriend = friends[i].name;
+                lowScore = totalDifference;
+                friendImage = friends[i].photo;
+            }
+            console.log('Comparing '+newPerson.name+' with '+friends[i].name+'. Total difference is '+totalDifference+'.');
+            // if current friend is better match, replace varaiables with new friend
+            if (totalDifference < lowScore) {
+                lowScore = totalDifference;
+                closeFriend = friends[i].name;
+                friendImage = friends[i].photo;
+                friendId = i;
+            }
+        }
+        // send json of closest matching friend
+        res.json(friends[friendId]);
+        // add the new survey results to the friends array
+        friends.push(newPerson);
+    });
+};
